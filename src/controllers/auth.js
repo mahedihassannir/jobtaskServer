@@ -1,12 +1,22 @@
 // This is the autController for the singUp and login 
 
-const User = require("../model/singUpModel")
+const User = require("../model/singUpModel");
 
 const bcrypt = require('bcrypt');
 
+const { validationResult } = require("express-validator")
 
+const errorFormater = require("../utils/errorsmg/errorFormater")
+
+const session = require("express-session")
 
 const login = async (req, res, next) => {
+
+    const errors = validationResult(req).formatWith(err => err.msg)
+
+    if (!errors.isEmpty()) {
+        return res.status(404).json(errors.mapped())
+    }
 
     const { email, password } = req.body;
     console.log(email);
@@ -30,10 +40,14 @@ const login = async (req, res, next) => {
         };
 
 
+
+        req.session.isLogin = true;
+        req.session.User = user;
+
+
+        console.log(req.session.User, "from session");
+
         res.status(200).json({ "message": "Login Successful", user });
-
-
-
 
     } catch (error) {
         console.log(error);
@@ -45,13 +59,30 @@ const login = async (req, res, next) => {
 
 const singUp = async (req, res) => {
 
+    const bodyData = req.body;
+
+    let errors = validationResult(req).formatWith(errorFormater)
+
+    if (!errors.isEmpty()) {
+
+        return res.status(400).json({
+            error: errors.mapped
+                ()
+        })
+
+    }
+
+
     // Create a new user document using the User model
     const newUser = new User({
-        name: 'mahedi',
-        email: 'john@mahedi.com',
-        password: 'password1232'
-    });
 
+        name: bodyData.name,
+        username: bodyData.username,
+        email: bodyData.email,
+        password: bodyData.password
+
+    });
+    console.log(newUser, "bola");
     // Save the user to the database
     try {
 
@@ -59,35 +90,40 @@ const singUp = async (req, res) => {
 
         console.log('User saved:', savedUser);
 
-        res.send("user created successfully");
+        res.json({ "smg": "user Create successfully", "success": true });
 
     } catch (error) {
         console.error('Error saving user:', error);
-    }
+    };
 
 
 
-}
+};
 
 const userProfile = async (req, res) => {
 
 
-    const id = req.params.id
-    console.log(id);
+    // // const id = req.params.id;
+    // // console.log(id);
 
 
-    try {
+    // try {
 
-        const userData = await User.findById(id)
+    //     // const userData = await User.findById(id);
 
-        console.log(userData);
+    //     // console.log(userData);
 
-        res.send(userData)
+    //     console.log(req.session.User, req.session.isLogin);
 
-    } catch (error) {
-        console.log(error);
+    //     res.send(req.session.User);
 
-    }
+    // } catch (error) {
+    //     console.log(error);
+
+    // }
+
+    console.log(req.session);
+res.send("hey")
 
 }
 
@@ -96,4 +132,4 @@ module.exports = {
     login,
     singUp,
     userProfile,
-}
+};
